@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/yunarta/terraform-atlassian-api-client/jira"
@@ -47,6 +48,11 @@ func (receiver *ProjectResource) Metadata(ctx context.Context, request resource.
 func (receiver *ProjectResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"retain_on_delete": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
+			},
 			"account_id": schema.StringAttribute{
 				Computed: true,
 			},
@@ -144,7 +150,7 @@ func (receiver *ProjectResource) Create(ctx context.Context, request resource.Cr
 		return
 	}
 
-	deploymentModel := NewProjectModel(createdProject, plan, computation)
+	deploymentModel := NewProjectModel(plan, createdProject, computation)
 
 	diags = response.State.Set(ctx, deploymentModel)
 	if util.TestDiagnostic(&response.Diagnostics, diags) {
@@ -176,7 +182,7 @@ func (receiver *ProjectResource) Read(ctx context.Context, request resource.Read
 		return
 	}
 
-	projectModel := NewProjectModel(project, state, computation)
+	projectModel := NewProjectModel(state, project, computation)
 
 	diags = response.State.Set(ctx, &projectModel)
 	if util.TestDiagnostic(&response.Diagnostics, diags) {
@@ -226,7 +232,7 @@ func (receiver *ProjectResource) Update(ctx context.Context, request resource.Up
 		return
 	}
 
-	deploymentModel := NewProjectModel(project, plan, computation)
+	deploymentModel := NewProjectModel(plan, project, computation)
 
 	diags = response.State.Set(ctx, deploymentModel)
 	if util.TestDiagnostic(&response.Diagnostics, diags) {
@@ -247,9 +253,11 @@ func (receiver *ProjectResource) Delete(ctx context.Context, request resource.De
 		return
 	}
 
-	_, err = receiver.client.ProjectService().Delete(state.Key.ValueString(), state.DeleteToTrash.ValueBool())
-	if util.TestError(&response.Diagnostics, err, "failed to remove project") {
-		return
+	if !state.RetainOnDelete.ValueBool() {
+		_, err = receiver.client.ProjectService().Delete(state.Key.ValueString(), state.DeleteToTrash.ValueBool())
+		if util.TestError(&response.Diagnostics, err, "failed to remove project") {
+			return
+		}
 	}
 
 	response.State.RemoveResource(ctx)

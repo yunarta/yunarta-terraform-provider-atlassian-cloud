@@ -10,6 +10,7 @@ import (
 )
 
 type ProjectModel struct {
+	RetainOnDelete  types.Bool   `tfsdk:"retain_on_delete"`
 	AccountId       types.String `tfsdk:"account_id"`
 	Key             types.String `tfsdk:"key"`
 	Name            types.String `tfsdk:"name"`
@@ -39,7 +40,7 @@ func (p ProjectModel) getProjectIdOrKey(ctx context.Context) string {
 	return p.Key.ValueString()
 }
 
-func NewProjectModel(project *jira.Project, plan ProjectModel, assignmentResult *AssignmentResult) *ProjectModel {
+func NewProjectModel(plan ProjectModel, project *jira.Project, assignmentResult *AssignmentResult) *ProjectModel {
 	var categoryId types.Int64
 	if len(project.ProjectCategory.ID) > 0 {
 		value, _ := strconv.Atoi(project.ProjectCategory.ID)
@@ -47,7 +48,9 @@ func NewProjectModel(project *jira.Project, plan ProjectModel, assignmentResult 
 	} else {
 		categoryId = types.Int64Null()
 	}
+
 	return &ProjectModel{
+		RetainOnDelete:    plan.RetainOnDelete,
 		AccountId:         types.StringValue(project.ID),
 		Key:               types.StringValue(project.Key),
 		Name:              types.StringValue(project.Name),

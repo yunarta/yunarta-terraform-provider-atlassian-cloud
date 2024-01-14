@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "mobilesolutionworks.com/development-platform/atlassian-cloud",
+		Address: "github.com/yunarta/atlassian-cloud",
 		Debug:   debug,
 	}
 

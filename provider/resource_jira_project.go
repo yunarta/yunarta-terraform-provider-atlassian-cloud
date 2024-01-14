@@ -10,8 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/yunarta/terraform-atlassian-api-client/jira"
+	jiraApi "github.com/yunarta/terraform-atlassian-api-client/jira"
 	"github.com/yunarta/terraform-atlassian-api-client/jira/cloud"
+	"github.com/yunarta/terraform-provider-atlassian-cloud/provider/jira"
 	"github.com/yunarta/terraform-provider-commons/util"
 	"regexp"
 )
@@ -25,7 +26,7 @@ var (
 	_ resource.Resource                = &ProjectResource{}
 	_ resource.ResourceWithConfigure   = &ProjectResource{}
 	_ resource.ResourceWithImportState = &ProjectResource{}
-	_ Configurable                     = &ProjectResource{}
+	_ ConfigurableForJira              = &ProjectResource{}
 	_ ProjectRoleResource              = &ProjectResource{}
 )
 
@@ -97,17 +98,17 @@ func (receiver *ProjectResource) Schema(ctx context.Context, request resource.Sc
 			"assignment_version": schema.StringAttribute{
 				Optional: true,
 			},
-			"computed_users":  ComputedAssignmentSchema,
-			"computed_groups": ComputedAssignmentSchema,
+			"computed_users":  jira.ComputedAssignmentSchema,
+			"computed_groups": jira.ComputedAssignmentSchema,
 		},
 		Blocks: map[string]schema.Block{
-			"assignments": AssignmentSchema(),
+			"assignments": jira.AssignmentSchema(),
 		},
 	}
 }
 
 func (receiver *ProjectResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	ConfigureResource(receiver, ctx, request, response)
+	ConfigureJiraResource(receiver, ctx, request, response)
 }
 
 func (receiver *ProjectResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
@@ -123,7 +124,7 @@ func (receiver *ProjectResource) Create(ctx context.Context, request resource.Cr
 		return
 	}
 
-	project := jira.CreateProject{
+	project := jiraApi.CreateProject{
 		Key:            plan.Key.ValueString(),
 		Name:           plan.Name.ValueString(),
 		ProjectTypeKey: plan.ProjectType.ValueString(),
@@ -164,7 +165,7 @@ func (receiver *ProjectResource) Read(ctx context.Context, request resource.Read
 		err   error
 
 		state   ProjectModel
-		project *jira.Project
+		project *jiraApi.Project
 	)
 
 	diags = request.State.Get(ctx, &state)
@@ -196,7 +197,7 @@ func (receiver *ProjectResource) Update(ctx context.Context, request resource.Up
 		err   error
 
 		plan, state ProjectModel
-		computation *AssignmentResult
+		computation *jira.AssignmentResult
 	)
 
 	diags = request.Plan.Get(ctx, &plan)
@@ -214,7 +215,7 @@ func (receiver *ProjectResource) Update(ctx context.Context, request resource.Up
 		categoryId = int(plan.CategoryId.ValueInt64())
 	}
 
-	project, err := receiver.client.ProjectService().Update(state.Key.ValueString(), jira.UpdateProject{
+	project, err := receiver.client.ProjectService().Update(state.Key.ValueString(), jiraApi.UpdateProject{
 		Name:          plan.Name.ValueString(),
 		LeadAccountId: plan.LeadAccount.ValueString(),
 		Description:   plan.Description.ValueString(),

@@ -24,7 +24,7 @@ type UserDataSource struct {
 var (
 	_ datasource.DataSource              = &UserDataSource{}
 	_ datasource.DataSourceWithConfigure = &UserDataSource{}
-	_ Configurable                       = &UserDataSource{}
+	_ ConfigurableForJira                = &UserDataSource{}
 )
 
 func NewUserDataSource() datasource.DataSource {
@@ -57,7 +57,7 @@ func (receiver *UserDataSource) Schema(ctx context.Context, request datasource.S
 }
 
 func (receiver *UserDataSource) Configure(ctx context.Context, request datasource.ConfigureRequest, response *datasource.ConfigureResponse) {
-	ConfigureDataSource(receiver, ctx, request, response)
+	ConfigureJiraDataSource(receiver, ctx, request, response)
 }
 
 func (receiver *UserDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
@@ -68,16 +68,24 @@ func (receiver *UserDataSource) Read(ctx context.Context, request datasource.Rea
 		state UserData
 	)
 
+	response.Diagnostics = make(diag.Diagnostics, 0)
+
 	diags = request.Config.Get(ctx, &state)
 	if util.TestDiagnostic(&response.Diagnostics, diags) {
 		return
 	}
 
 	user, err := receiver.client.ActorService().ReadUser(state.EmailAddress.ValueString())
-	if util.TestError(&response.Diagnostics, err, "failed to remove project") {
+	if util.TestError(&response.Diagnostics, err, "failed to find user project") {
 		return
 	}
 
+	if user == nil {
+		response.Diagnostics.Append(diag.NewErrorDiagnostic("Failed to find user", state.EmailAddress.ValueString()))
+		return
+	}
+
+	// crashed here
 	diags = response.State.Set(ctx, &UserData{
 		Id:           types.StringValue(user.AccountID),
 		Name:         types.StringValue(user.Name),

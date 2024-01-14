@@ -4,7 +4,8 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/yunarta/terraform-atlassian-api-client/jira"
+	jiraApi "github.com/yunarta/terraform-atlassian-api-client/jira"
+	"github.com/yunarta/terraform-provider-atlassian-cloud/provider/jira"
 	"github.com/yunarta/terraform-provider-commons/util"
 	"strconv"
 )
@@ -29,8 +30,8 @@ type ProjectModel struct {
 
 var _ ProjectRoleInterface = &ProjectModel{}
 
-func (p ProjectModel) getAssignment(ctx context.Context) (Assignments, diag.Diagnostics) {
-	var assignments Assignments = make([]Assignment, 0)
+func (p ProjectModel) getAssignment(ctx context.Context) (jira.Assignments, diag.Diagnostics) {
+	var assignments jira.Assignments = make([]jira.Assignment, 0)
 
 	diags := p.Assignments.ElementsAs(ctx, &assignments, true)
 	return assignments, diags
@@ -40,7 +41,7 @@ func (p ProjectModel) getProjectIdOrKey(ctx context.Context) string {
 	return p.Key.ValueString()
 }
 
-func NewProjectModel(plan ProjectModel, project *jira.Project, assignmentResult *AssignmentResult) *ProjectModel {
+func NewProjectModel(plan ProjectModel, project *jiraApi.Project, assignmentResult *jira.AssignmentResult) *ProjectModel {
 	var categoryId types.Int64
 	if len(project.ProjectCategory.ID) > 0 {
 		value, _ := strconv.Atoi(project.ProjectCategory.ID)

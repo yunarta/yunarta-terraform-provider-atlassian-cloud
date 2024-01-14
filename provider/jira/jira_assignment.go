@@ -1,4 +1,4 @@
-package provider
+package jira
 
 import (
 	"context"
@@ -154,7 +154,7 @@ func ApplyNewAssignmentSet(ctx context.Context, actorLookupService *cloud.ActorL
 
 	for user, requestedRoles := range assignmentOrder.Users {
 		found := actorLookupService.FindUser(user)
-		if found == "" {
+		if found == nil {
 			continue
 		}
 
@@ -171,7 +171,7 @@ func ApplyNewAssignmentSet(ctx context.Context, actorLookupService *cloud.ActorL
 
 	for group, requestedRoles := range assignmentOrder.Groups {
 		found := actorLookupService.FindGroup(group)
-		if found == "" {
+		if found == nil {
 			continue
 		}
 
@@ -200,15 +200,15 @@ func UpdateAssignment(ctx context.Context, actorLookupService *cloud.ActorLookup
 	inStateAssignmentOrder AssignmentOrder,
 	plannedAssignmentOrder AssignmentOrder,
 	forceUpdate bool,
-	updateUserPermission UpdateUserRolesFunc,
-	updateGroupPermission UpdateGroupRolesFunc) (*AssignmentResult, diag.Diagnostics) {
+	updateUserRole UpdateUserRolesFunc,
+	updateGroupRole UpdateGroupRolesFunc) (*AssignmentResult, diag.Diagnostics) {
 
-	computedUsers, diags := updateUsers(inStateAssignmentOrder, plannedAssignmentOrder, actorLookupService, forceUpdate, updateUserPermission)
+	computedUsers, diags := updateUsers(inStateAssignmentOrder, plannedAssignmentOrder, actorLookupService, forceUpdate, updateUserRole)
 	if diags != nil {
 		return nil, diags
 	}
 
-	computedGroups, diags := updateGroups(inStateAssignmentOrder, plannedAssignmentOrder, actorLookupService, forceUpdate, updateGroupPermission)
+	computedGroups, diags := updateGroups(inStateAssignmentOrder, plannedAssignmentOrder, actorLookupService, forceUpdate, updateGroupRole)
 	if diags != nil {
 		return nil, diags
 	}
@@ -228,7 +228,7 @@ func updateUsers(inStateAssignmentOrder AssignmentOrder, plannedAssignmentOrder 
 		}
 
 		found := actorLookupService.FindUser(user)
-		if found == "" {
+		if found == nil {
 			continue
 		}
 
@@ -268,7 +268,7 @@ func updateGroups(inStateAssignmentOrder AssignmentOrder, plannedAssignmentOrder
 		}
 
 		found := actorLookupService.FindGroup(group)
-		if found == "nil" {
+		if found == nil {
 			continue
 		}
 
@@ -323,13 +323,13 @@ func RemoveAssignment(ctx context.Context,
 	return nil
 }
 
-func ComputeAssignment(ctx context.Context,
-	assignedPermissions *jira.ObjectRoles, assignmentOrder AssignmentOrder) (*AssignmentResult, diag.Diagnostics) {
+func ComputeJiraAssignment(ctx context.Context,
+	assignedRoles *jira.ObjectRoles, assignmentOrder AssignmentOrder) (*AssignmentResult, diag.Diagnostics) {
 
 	computedUsers := make([]ComputedAssignment, 0)
 	computedGroups := make([]ComputedAssignment, 0)
 
-	for _, user := range assignedPermissions.Users {
+	for _, user := range assignedRoles.Users {
 		if _, ok := assignmentOrder.Users[user.Name]; ok {
 			computedUsers = append(computedUsers, ComputedAssignment{
 				Name:  user.Name,
@@ -338,7 +338,7 @@ func ComputeAssignment(ctx context.Context,
 		}
 	}
 
-	for _, group := range assignedPermissions.Groups {
+	for _, group := range assignedRoles.Groups {
 		if _, ok := assignmentOrder.Groups[group.Name]; ok {
 			computedGroups = append(computedGroups, ComputedAssignment{
 				Name:  group.Name,

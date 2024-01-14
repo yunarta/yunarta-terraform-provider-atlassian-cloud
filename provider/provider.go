@@ -56,6 +56,7 @@ func (p *AtlassianCloudProvider) DataSources(ctx context.Context) []func() datas
 func (p *AtlassianCloudProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewProjectResource,
+		NewConfluenceSpaceResource,
 	}
 }
 

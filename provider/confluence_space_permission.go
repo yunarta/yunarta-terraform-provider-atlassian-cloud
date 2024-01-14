@@ -4,20 +4,20 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/yunarta/golang-quality-of-life-pack/collections"
-	"github.com/yunarta/terraform-atlassian-api-client/jira/cloud"
-	"github.com/yunarta/terraform-provider-atlassian-cloud/provider/jira"
+	"github.com/yunarta/terraform-atlassian-api-client/confluence/cloud"
+	"github.com/yunarta/terraform-provider-atlassian-cloud/provider/confluence"
 )
 
-type ProjectRoleResource interface {
-	getClient() *cloud.JiraClient
+type SpaceRoleResource interface {
+	getClient() *cloud.ConfluenceClient
 }
 
-type ProjectRoleInterface interface {
-	getAssignment(ctx context.Context) (jira.Assignments, diag.Diagnostics)
-	getProjectIdOrKey(ctx context.Context) string
+type SpaceRoleInterface interface {
+	getAssignment(ctx context.Context) (confluence.Assignments, diag.Diagnostics)
+	getSpaceIdOrKey(ctx context.Context) string
 }
 
-func CreateProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResource, plan ProjectRoleInterface) (*jira.AssignmentResult, diag.Diagnostics) {
+func CreateSpaceRoleAssignments(ctx context.Context, receiver SpaceRoleResource, plan SpaceRoleInterface) (*confluence.AssignmentResult, diag.Diagnostics) {
 	plannedAssignment, diags := plan.getAssignment(ctx)
 	if diags != nil {
 		return nil, diags
@@ -28,15 +28,15 @@ func CreateProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 		return nil, diags
 	}
 
-	projectIdOrKey := plan.getProjectIdOrKey(ctx)
+	SpaceIdOrKey := plan.getSpaceIdOrKey(ctx)
 
-	updateService := cloud.NewProjectRoleManager(
+	updateService := cloud.NewSpaceRoleManager(
 		receiver.getClient(),
-		projectIdOrKey,
+		SpaceIdOrKey,
 	)
 
 	// Read both in state and planned roles to fill in the update service with prepared data
-	_, _ = updateService.ReadRoles(plannedAssignmentOrder.Roles)
+	_, _ = updateService.ReadPermissions()
 	// Register all usernames and groupNames in play to prepare the data
 	receiver.getClient().ActorLookupService().RegisterUsernames(
 		plannedAssignmentOrder.UserNames...,
@@ -44,20 +44,19 @@ func CreateProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 	receiver.getClient().ActorLookupService().RegisterGroupNames(
 		plannedAssignmentOrder.GroupNames...,
 	)
-	defer updateService.Finalized()
 
-	return jira.ApplyNewAssignmentSet(ctx, receiver.getClient().ActorLookupService(),
+	return confluence.ApplyNewAssignmentSet(ctx, receiver.getClient().ActorLookupService(),
 		*plannedAssignmentOrder,
 		func(user string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(user, requestedRoles)
+			return updateService.UpdateUserPermissions(user, requestedRoles)
 		},
 		func(group string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(group, requestedRoles)
+			return updateService.UpdateUserPermissions(group, requestedRoles)
 		},
 	)
 }
 
-func ComputeProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResource, state ProjectRoleInterface) (*jira.AssignmentResult, diag.Diagnostics) {
+func ComputeSpaceRoleAssignments(ctx context.Context, receiver SpaceRoleResource, state SpaceRoleInterface) (*confluence.AssignmentResult, diag.Diagnostics) {
 	assignments, diags := state.getAssignment(ctx)
 	if diags != nil {
 		return nil, diags
@@ -68,26 +67,25 @@ func ComputeProjectRoleAssignments(ctx context.Context, receiver ProjectRoleReso
 		return nil, diags
 	}
 
-	projectIdOrKey := state.getProjectIdOrKey(ctx)
+	SpaceIdOrKey := state.getSpaceIdOrKey(ctx)
 
-	updateService := cloud.NewProjectRoleManager(
+	updateService := cloud.NewSpaceRoleManager(
 		receiver.getClient(),
-		projectIdOrKey,
+		SpaceIdOrKey,
 	)
-	updateService.ReadOnly = true
 
-	assignedRoles, err := updateService.ReadRoles(assignmentOrder.Roles)
+	assignedRoles, err := updateService.ReadPermissions()
 	if err != nil {
-		return nil, []diag.Diagnostic{diag.NewErrorDiagnostic("Failed to read project roles", err.Error())}
+		return nil, []diag.Diagnostic{diag.NewErrorDiagnostic("Failed to read Space roles", err.Error())}
 	}
 
-	return jira.ComputeJiraAssignment(ctx, assignedRoles, *assignmentOrder)
+	return confluence.ComputePermissionAssignments(ctx, assignedRoles, *assignmentOrder)
 }
 
-func UpdateProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResource,
-	plan ProjectRoleInterface,
-	state ProjectRoleInterface,
-	forceUpdate bool) (*jira.AssignmentResult, diag.Diagnostics) {
+func UpdateSpaceRoleAssignments(ctx context.Context, receiver SpaceRoleResource,
+	plan SpaceRoleInterface,
+	state SpaceRoleInterface,
+	forceUpdate bool) (*confluence.AssignmentResult, diag.Diagnostics) {
 
 	plannedAssignments, diags := plan.getAssignment(ctx)
 	if diags != nil {
@@ -110,15 +108,15 @@ func UpdateProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 	}
 
 	// the plan does not have computed value deployment ID
-	projectIdOrKey := state.getProjectIdOrKey(ctx)
+	SpaceIdOrKey := state.getSpaceIdOrKey(ctx)
 
-	updateService := cloud.NewProjectRoleManager(
+	updateService := cloud.NewSpaceRoleManager(
 		receiver.getClient(),
-		projectIdOrKey,
+		SpaceIdOrKey,
 	)
 
 	// Read both in state and planned roles to fill in the update service with prepared data
-	_, _ = updateService.ReadRoles(append(inStateAssignmentOrder.Roles, plannedAssignmentOrder.Roles...))
+	_, _ = updateService.ReadPermissions()
 	// Register all usernames and groupNames in play to prepare the data
 	receiver.getClient().ActorLookupService().RegisterUsernames(
 		collections.Unique(append(inStateAssignmentOrder.UserNames, plannedAssignmentOrder.UserNames...))...,
@@ -126,22 +124,22 @@ func UpdateProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 	receiver.getClient().ActorLookupService().RegisterGroupNames(
 		collections.Unique(append(inStateAssignmentOrder.GroupNames, plannedAssignmentOrder.GroupNames...))...,
 	)
-	defer updateService.Finalized()
+	//defer updateService.Finalized()
 
-	return jira.UpdateAssignment(ctx, receiver.getClient().ActorLookupService(),
+	return confluence.UpdateAssignment(ctx, receiver.getClient().ActorLookupService(),
 		*inStateAssignmentOrder,
 		*plannedAssignmentOrder,
 		forceUpdate,
 		func(user string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(user, requestedRoles)
+			return updateService.UpdateUserPermissions(user, requestedRoles)
 		},
 		func(group string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(group, requestedRoles)
+			return updateService.UpdateUserPermissions(group, requestedRoles)
 		},
 	)
 }
 
-func DeleteProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResource, state ProjectRoleInterface) diag.Diagnostics {
+func DeleteSpaceRoleAssignments(ctx context.Context, receiver SpaceRoleResource, state SpaceRoleInterface) diag.Diagnostics {
 	assignments, diags := state.getAssignment(ctx)
 	if diags != nil {
 		return diags
@@ -152,15 +150,15 @@ func DeleteProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 		return diags
 	}
 
-	projectIdOrKey := state.getProjectIdOrKey(ctx)
+	SpaceIdOrKey := state.getSpaceIdOrKey(ctx)
 
-	updateService := cloud.NewProjectRoleManager(
+	updateService := cloud.NewSpaceRoleManager(
 		receiver.getClient(),
-		projectIdOrKey,
+		SpaceIdOrKey,
 	)
 
 	// Read both in state and planned roles to fill in the update service with prepared data
-	assignedRoles, _ := updateService.ReadRoles(inStateAssignmentOrder.Roles)
+	assignedRoles, _ := updateService.ReadPermissions()
 	// Register all usernames and groupNames in play to prepare the data
 	receiver.getClient().ActorLookupService().RegisterUsernames(
 		inStateAssignmentOrder.UserNames...,
@@ -168,13 +166,13 @@ func DeleteProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 	receiver.getClient().ActorLookupService().RegisterGroupNames(
 		inStateAssignmentOrder.GroupNames...,
 	)
-	defer updateService.Finalized()
+	//defer updateService.Finalized()
 
-	return jira.RemoveAssignment(ctx, assignedRoles, inStateAssignmentOrder,
+	return confluence.RemoveAssignment(ctx, assignedRoles, inStateAssignmentOrder,
 		func(user string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(user, requestedRoles)
+			return updateService.UpdateUserPermissions(user, requestedRoles)
 		},
 		func(group string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(group, requestedRoles)
+			return updateService.UpdateUserPermissions(group, requestedRoles)
 		})
 }

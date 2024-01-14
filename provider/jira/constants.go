@@ -1,4 +1,4 @@
-package provider
+package jira
 
 const failedToUpdateUserRoles = "Failed to update user roles"
 const failedToRemoveUserRoles = "Failed to remove user roles"

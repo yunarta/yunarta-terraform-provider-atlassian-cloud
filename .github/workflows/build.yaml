@@ -1,0 +1,67 @@
+name: build
+
+# Triggers for when the workflow will run
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Go Build
+    runs-on: ubuntu-latest
+
+    # The strategy matrix allows you to run jobs on different versions of languages or operating systems
+    strategy:
+      matrix:
+        go-version:
+          - 1.21
+        os:
+          - ubuntu-latest
+
+    steps:
+      # The "actions/checkout" action helps pull your code from GitHub into the GitHub Actions runner
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Use "actions/setup-go" action to set up your desired version of Go
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+        id: go
+
+      # Cache your Go dependencies to speed up future builds
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+
+      # Install "gocover-cobertura".
+      # This tool is used to convert Go code coverage to Cobertura format
+      - name: Install gocover-cobertura
+        run: go get github.com/boumenot/gocover-cobertura && go install github.com/boumenot/gocover-cobertura
+
+      # Run Go tests and create a coverage profile
+      - name: Run tests and create coverage.out
+        run: go test -race -coverprofile=coverage.out ./...
+
+      # Convert coverage report to Cobertura format.
+      # Cobertura is an XML format understood by many CI servers
+      - name: Convert to Cobertura
+        run: gocover-cobertura < coverage.out > coverage.xml
+
+      # Generate and publish the coverage report summary
+      - name: Code Coverage Summary Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage.xml
+          badge: true
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '60 80'

@@ -2,6 +2,7 @@ package confluence
 
 import (
 	"context"
+	"github.com/emirpasic/gods/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -13,7 +14,8 @@ import (
 	"github.com/yunarta/golang-quality-of-life-pack/collections"
 	"github.com/yunarta/terraform-atlassian-api-client/confluence"
 	"github.com/yunarta/terraform-atlassian-api-client/jira/cloud"
-	"sort"
+	"slices"
+	"strings"
 )
 
 type Assignment struct {
@@ -43,7 +45,9 @@ func (assignments Assignments) CreateAssignmentOrder(ctx context.Context) (*Assi
 		priorities = append(priorities, assignment.Priority)
 		makeAssignments[assignment.Priority] = assignment
 	}
-	sort.Slice(priorities, func(a, b int) bool { return priorities[a] > priorities[b] })
+	slices.SortFunc(priorities, func(a, b int64) int {
+		return utils.Int64Comparator(a, b)
+	})
 
 	var usersAssignments = map[string][]string{}
 	var groupsAssignments = map[string][]string{}
@@ -206,13 +210,6 @@ func ApplyNewAssignmentSet(ctx context.Context, actorLookupService *cloud.ActorL
 			return nil, []diag.Diagnostic{diag.NewErrorDiagnostic(failedToUpdateGroupPermissions, err.Error())}
 		}
 	}
-
-	sort.Slice(computedUsers, func(a, b int) bool {
-		return computedUsers[a].Name > computedUsers[b].Name
-	})
-	sort.Slice(computedGroups, func(a, b int) bool {
-		return computedGroups[a].Name > computedGroups[b].Name
-	})
 
 	return createAssignmentResult(ctx, computedUsers, computedGroups)
 }
@@ -388,12 +385,11 @@ func createAssignmentResult(ctx context.Context, computedUsers []ComputedAssignm
 	}, nil
 }
 
-func createTfList(ctx context.Context, computedUsers []ComputedAssignment) (*basetypes.ListValue, diag.Diagnostics) {
-	sort.Slice(computedUsers, func(a, b int) bool {
-		return computedUsers[a].Name > computedUsers[b].Name
+func createTfList(ctx context.Context, assignments []ComputedAssignment) (*basetypes.ListValue, diag.Diagnostics) {
+	slices.SortFunc(assignments, func(a, b ComputedAssignment) int {
+		return strings.Compare(a.Name, b.Name)
 	})
-
-	computedUsersList, diags := types.ListValueFrom(ctx, computedAssignmentType, computedUsers)
+	computedUsersList, diags := types.ListValueFrom(ctx, computedAssignmentType, assignments)
 	if diags != nil {
 		return nil, diags
 	}

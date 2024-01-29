@@ -2,6 +2,7 @@ package jira
 
 import (
 	"context"
+	"github.com/emirpasic/gods/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -10,7 +11,9 @@ import (
 	"github.com/yunarta/golang-quality-of-life-pack/collections"
 	"github.com/yunarta/terraform-atlassian-api-client/jira"
 	"github.com/yunarta/terraform-atlassian-api-client/jira/cloud"
+	"slices"
 	"sort"
+	"strings"
 )
 
 type Assignment struct {
@@ -40,8 +43,9 @@ func (assignments Assignments) CreateAssignmentOrder(ctx context.Context) (*Assi
 		priorities = append(priorities, assignment.Priority)
 		makeAssignments[assignment.Priority] = assignment
 	}
-	sort.Slice(priorities, func(a, b int) bool { return priorities[a] > priorities[b] })
-
+	slices.SortFunc(priorities, func(a, b int64) int {
+		return utils.Int64Comparator(a, b)
+	})
 	var usersAssignments = map[string][]string{}
 	var groupsAssignments = map[string][]string{}
 	var userNames = make([]string, 0)
@@ -367,12 +371,11 @@ func createAssignmentResult(ctx context.Context, computedUsers []ComputedAssignm
 	}, nil
 }
 
-func createTfList(ctx context.Context, computedUsers []ComputedAssignment) (*basetypes.ListValue, diag.Diagnostics) {
-	sort.Slice(computedUsers, func(a, b int) bool {
-		return computedUsers[a].Name > computedUsers[b].Name
+func createTfList(ctx context.Context, assignments []ComputedAssignment) (*basetypes.ListValue, diag.Diagnostics) {
+	slices.SortFunc(assignments, func(a, b ComputedAssignment) int {
+		return strings.Compare(a.Name, b.Name)
 	})
-
-	computedUsersList, diags := types.ListValueFrom(ctx, computedAssignmentType, computedUsers)
+	computedUsersList, diags := types.ListValueFrom(ctx, computedAssignmentType, assignments)
 	if diags != nil {
 		return nil, diags
 	}

@@ -12,6 +12,11 @@ import (
 	"github.com/yunarta/terraform-provider-commons/util"
 )
 
+const (
+	dataSourceConfigureTypeError = "Unexpected Data Source Configure Type"
+	expectedTypeErrorString      = "Expected *AtlassianCloudProviderModel, got: %T. Please report this issue to the provider developers."
+)
+
 type AtlassianCloudProviderConfig struct {
 	EndPoint types.String `tfsdk:"endpoint"`
 	Username types.String `tfsdk:"username"`
@@ -34,8 +39,8 @@ func ConfigureJiraResource(receiver ConfigurableForJira, ctx context.Context, re
 	config, ok := request.ProviderData.(*AtlassianCloudProviderConfig)
 	if !ok {
 		response.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *AtlassianCloudProviderModel, got: %T. Please report this issue to the provider developers.", request.ProviderData),
+			dataSourceConfigureTypeError,
+			fmt.Sprintf(expectedTypeErrorString, request.ProviderData),
 		)
 		return
 	}
@@ -60,8 +65,8 @@ func ConfigureConfluenceResource(receiver ConfigurableForConfluence, ctx context
 	config, ok := request.ProviderData.(*AtlassianCloudProviderConfig)
 	if !ok {
 		response.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *AtlassianCloudProviderModel, got: %T. Please report this issue to the provider developers.", request.ProviderData),
+			dataSourceConfigureTypeError,
+			fmt.Sprintf(expectedTypeErrorString, request.ProviderData),
 		)
 		return
 	}
@@ -86,8 +91,8 @@ func ConfigureJiraDataSource(receiver ConfigurableForJira, ctx context.Context, 
 	config, ok := request.ProviderData.(*AtlassianCloudProviderConfig)
 	if !ok {
 		response.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *AtlassianCloudProviderModel, got: %T. Please report this issue to the provider developers.", request.ProviderData),
+			dataSourceConfigureTypeError,
+			fmt.Sprintf(expectedTypeErrorString, request.ProviderData),
 		)
 		return
 	}

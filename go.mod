@@ -3,6 +3,7 @@ module github.com/yunarta/terraform-provider-atlassian-cloud
 go 1.21
 
 require (
+	github.com/emirpasic/gods v1.18.1
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/terraform-plugin-framework v1.5.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0

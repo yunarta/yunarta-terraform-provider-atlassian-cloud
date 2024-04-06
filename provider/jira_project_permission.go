@@ -136,7 +136,7 @@ func UpdateProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 			return updateService.UpdateUserRoles(user, requestedRoles)
 		},
 		func(group string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(group, requestedRoles)
+			return updateService.UpdateGroupRoles(group, requestedRoles)
 		},
 	)
 }
@@ -175,6 +175,6 @@ func DeleteProjectRoleAssignments(ctx context.Context, receiver ProjectRoleResou
 			return updateService.UpdateUserRoles(user, requestedRoles)
 		},
 		func(group string, requestedRoles []string) error {
-			return updateService.UpdateUserRoles(group, requestedRoles)
+			return updateService.UpdateGroupRoles(group, requestedRoles)
 		})
 }

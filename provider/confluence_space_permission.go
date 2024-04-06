@@ -134,7 +134,7 @@ func UpdateSpaceRoleAssignments(ctx context.Context, receiver SpaceRoleResource,
 			return updateService.UpdateUserPermissions(user, requestedRoles)
 		},
 		func(group string, requestedRoles []string) error {
-			return updateService.UpdateUserPermissions(group, requestedRoles)
+			return updateService.UpdateGroupPermissions(group, requestedRoles)
 		},
 	)
 }
@@ -173,6 +173,6 @@ func DeleteSpaceRoleAssignments(ctx context.Context, receiver SpaceRoleResource,
 			return updateService.UpdateUserPermissions(user, requestedRoles)
 		},
 		func(group string, requestedRoles []string) error {
-			return updateService.UpdateUserPermissions(group, requestedRoles)
+			return updateService.UpdateGroupPermissions(group, requestedRoles)
 		})
 }

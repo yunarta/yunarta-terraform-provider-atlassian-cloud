@@ -1,3 +1,4 @@
 .scannerwork
 coverage.out
 sonar-project.properties
+*.iml

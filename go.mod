@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/yunarta/golang-quality-of-life-pack v1.0.0
 	github.com/yunarta/terraform-api-transport v1.0.1
-	github.com/yunarta/terraform-atlassian-api-client v1.3.13
+	github.com/yunarta/terraform-atlassian-api-client v1.3.14
 	github.com/yunarta/terraform-provider-commons v1.0.2
 )
 

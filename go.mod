@@ -5,14 +5,14 @@ go 1.21
 require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/gorilla/mux v1.8.1
-	github.com/hashicorp/terraform-plugin-framework v1.8.0
+	github.com/hashicorp/terraform-plugin-framework v1.9.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-testing v1.7.0
 	github.com/stretchr/testify v1.9.0
 	github.com/yunarta/golang-quality-of-life-pack v1.0.0
 	github.com/yunarta/terraform-api-transport v1.0.1
-	github.com/yunarta/terraform-atlassian-api-client v1.3.11
+	github.com/yunarta/terraform-atlassian-api-client v1.3.13
 	github.com/yunarta/terraform-provider-commons v1.0.2
 )
 
@@ -46,7 +46,6 @@ require (
 	github.com/hashicorp/terraform-registry-address v0.2.3 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

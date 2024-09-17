@@ -50,6 +50,7 @@ func (p *AtlassianCloudProvider) Configure(ctx context.Context, request provider
 func (p *AtlassianCloudProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewUserDataSource,
+		NewJiraProjectRolesDataSource,
 	}
 }
 

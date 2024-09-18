@@ -92,7 +92,6 @@ func (receiver *JiraProjectRolesDataSource) Read(ctx context.Context, request da
 	}
 
 	manager := cloud.NewProjectRoleManager(receiver.client, state.Key)
-	_, err = manager.ReadAllRoles()
 	objectRoles, err := manager.ReadAllRoles()
 
 	users, groups := CreateAttestation(objectRoles)
